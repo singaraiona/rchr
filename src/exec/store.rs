@@ -1,4 +1,4 @@
-use chr::constraints::Constraint;
+use exec::constraints::Constraint;
 
 #[derive(Clone)]
 pub struct Store {

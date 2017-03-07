@@ -9,3 +9,5 @@ path = "src/app/rchr.rs"
 
 [dependencies]
 itertools = "0.5.9"
+lazy_static = "0.2.2"
+regex = "0.2"

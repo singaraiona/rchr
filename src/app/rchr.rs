@@ -7,23 +7,36 @@ use itertools::Product;
 use itertools::Itertools;
 use std::clone::Clone;
 
+use std::io::{self, Read, Write};
+use std::str;
+use std::ascii::AsciiExt;
+
 use rchr::handle;
-use rchr::chr::store::Store;
-use rchr::chr::constraints::Constraint;
+use rchr::exec::store::Store;
+use rchr::exec::constraints::Constraint;
+use rchr::parse::parser;
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+fn ps1() {
+    print!("chr>");
+    io::stdout().flush().unwrap();
+}
 
 fn main() {
-    let mut store = Store::new();
-    store.push(Constraint::new(0));
-    store.push(Constraint::new(0));
-    store.push(Constraint::new(1));
-    store.push(Constraint::new(0));
-    store.push(Constraint::new(2));
-    store.push(Constraint::new(2));
-    let a = chr_iter!(store, 0);
-    let b = chr_iter!(store, 1);
-    let c = chr_iter!(store, 2);
-    let it = head_iter![a.iter(), b.iter(), c.iter()];
-    for elt in it {
-        println!("ELT: {:?}", elt);
+    let mut p = parser::new();
+    let mut input = vec![0u8; 256];
+    println!("RCHR\\ {}", VERSION);
+    ps1();
+    loop {
+        let size = io::stdin().read(&mut input).expect("STDIN error.");
+        let v = p.parse(&input[..size - 1]);
+        match v {
+            Ok(n) => {
+                println!("------ Parse ------ \n{:?}", n);
+            }
+            Err(e) => println!("'{}", format!("{:?}", e).to_ascii_lowercase()),
+        }
+        ps1();
     }
 }
