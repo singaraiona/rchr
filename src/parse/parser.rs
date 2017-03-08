@@ -1,5 +1,5 @@
 use parse::error::Error;
-use exec::chr::{self, Rule, CHR};
+use exec::chr::{self, Kind, CHR};
 use parse::token::{Token, Raw};
 use std::str;
 
@@ -44,8 +44,21 @@ impl Parser {
         self.text.is_empty()
     }
 
+    #[inline]
+    fn parse_head(&mut self) -> Result<CHR, Error> {
+        let mut vec: Vec<CHR> = Vec::new();
+        while self.matches(Token::Comma).is_some() {
+            let n = try!(self.parse_noun());
+            vec.push(n);
+        }
+        match vec.len() {
+            0 => Ok(CHR::Nil),
+            1 => Ok(vec.pop().unwrap()),
+            _ => Ok(CHR::List(vec)),
+        }
+    }
+
     fn parse_noun(&mut self) -> Result<CHR, Error> {
-        println!("PARSE_NOUN TEXT: {:?}", self.text);
         if self.at(Token::Name) {
             let n = try!(self.expect(Token::Name));
             let t = try!(n.parse::<String>());
@@ -55,18 +68,56 @@ impl Parser {
             }
             return Ok(CHR::Name(t));
         }
-        Err(Error::ParseError(format!("Unexpected token {}", self.text)))
+        Err(Error::ParseError(format!("Unexpected token: `{}", self.text)))
     }
 
     fn parse_ex(&mut self, node: CHR) -> Result<CHR, Error> {
-        println!("PARSE_EX TEXT: {:?}", self.text);
-        if self.matches(Token::NameSep).is_some() {
-            return Ok(node);
+        // In case when rule name is specified
+        if self.matches(Token::Prefix).is_some() {
+            let head = try!(self.parse_list(None, Token::Comma));
+            println!("HEAD: {:?}", head);
+            let mut replace = chr::empty_list();
+            if self.matches(Token::Replace).is_some() {
+                println!("REPLACE");
+                replace = try!(self.parse_list(None, Token::Comma));
+            }
+            let rt = try!(self.expect(Token::Suffix));
+            let kind = try!(rt.parse::<Kind>());
+            let body = try!(self.parse_list(None, Token::Comma));
+            if self.matches(Token::Guard).is_some() {
+                let b = try!(self.parse_list(None, Token::Comma));
+                return Ok(chr::rule(kind, node, head, replace, body, b));
+            }
+            return Ok(chr::rule(kind, node, head, replace, CHR::Nil, body));
         }
-        if self.matches(Token::RuleSep).is_some() {
-            return Ok(CHR::Rule(Rule::Propagation));
+        // In case without name and simple head
+        if self.at(Token::Suffix) {
+            let rt = try!(self.expect(Token::Suffix));
+            let kind = try!(rt.parse::<Kind>());
+            let body = try!(self.parse_list(None, Token::Comma));
+            if self.matches(Token::Guard).is_some() {
+                let b = try!(self.parse_list(None, Token::Comma));
+                return Ok(chr::rule(kind, CHR::Nil, node, chr::empty_list(), body, b));
+            }
+            return Ok(chr::rule(kind, CHR::Nil, node, chr::empty_list(), CHR::Nil, body));
         }
-        self.parse_list(None, Token::Comma)
+        // In case without name and compound head
+        if self.at(Token::Comma) {
+            let h = try!(self.parse_head());
+            return match h {
+                CHR::List(mut v) => {
+                    v.insert(0, node);
+                    Ok(CHR::List(v))
+                }
+                x => Ok(CHR::List(vec![node, x])),
+            };
+        }
+        // if self.at(Token::Verb) {
+        //     let n = try!(self.expect(Token::Name));
+        //     let t = try!(n.parse::<String>());
+        //     // let
+        // }
+        Ok(node)
     }
 
     fn parse_list(&mut self, terminal: Option<Token>, sep: Token) -> Result<CHR, Error> {

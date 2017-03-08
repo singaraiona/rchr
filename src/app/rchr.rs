@@ -33,7 +33,7 @@ fn main() {
         let v = p.parse(&input[..size - 1]);
         match v {
             Ok(n) => {
-                println!("------ Parse ------ \n{:?}", n);
+                println!("------ Parse ------ \n{:#?}", n);
             }
             Err(e) => println!("'{}", format!("{:?}", e).to_ascii_lowercase()),
         }

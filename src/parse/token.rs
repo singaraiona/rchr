@@ -7,10 +7,13 @@ lazy_static! {
     // Tokens
     static ref TOKENS: Vec<Regex> = vec![r"^(true|false)",                         // 0 - BOOL
                                          r"^-?(0w|0N|\d+\.\d*|\d*\.?\d)",          // 2 - NUMBER
+                                         r"^[+\x2D*%!&|<>=~,^#_$?@.]{1,2}",        // 6 - VERB 
                                          r"^[a-z][a-z\d]*",                        // 3 - NAME
                                          r",",                                     // 4 - COMMA     
-                                         r"^@",                                    // 4 - NAME_SEP 
-                                         r"^<?=+>",                                // 5 - RULE_SEP 
+                                         r"^@",                                    // 4 - PREFIX 
+                                         r"^\\",                                   // 4 - REPLACE
+                                         r"^<?=+>",                                // 5 - SUFFIX 
+                                         r"^\|",                                   // 6 - GUARD
                                          r"^`([a-zA-Z0-9.]*)?",                    // 4 - SYMBOL 
                                          r"^\x22(\\.|[^\x5C\x22])*\x22",           // 5 - STRING
                                          r"^;",                                    // 10- SEMI
@@ -26,10 +29,13 @@ lazy_static! {
 pub enum Token {
     Bool,
     Number,
+    Verb,
     Name,
     Comma,
-    NameSep,
-    RuleSep,
+    Prefix,
+    Replace,
+    Suffix,
+    Guard,
     Symbol,
     String,
     Semi,
